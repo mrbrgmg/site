@@ -1,49 +1,135 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Définitions — minimal</title>
-<style>
-:root{--bg:#071024;--card:#0b1220;--accent:#60a5fa;--muted:#94a3b8}
-*{box-sizing:border-box}
-body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; min-height:100vh; background:linear-gradient(180deg,#071024 0%, #0b1220 100%); color:#e6eef8; display:flex; align-items:center; justify-content:center; padding:20px}
-.card{width:100%; max-width:720px; background:var(--card); border-radius:12px; padding:22px; box-shadow:0 6px 24px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03)}
-h1{margin:0 0 8px 0; font-size:18px}
-.word{font-weight:700; font-size:36px; margin:12px 0}
-.definition{background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; min-height:72px; display:none; white-space:pre-wrap}
-.definition.visible{display:block}
-.controls{display:flex; gap:10px; margin-top:12px}
-button{background:transparent; border:1px solid rgba(255,255,255,0.06); padding:10px 14px; color:inherit; border-radius:10px; cursor:pointer}
-button.primary{background:linear-gradient(90deg,var(--accent),#3b82f6); border:0; color:#04263a}
-textarea{width:100%; min-height:120px; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; margin-top:12px; resize:vertical}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Définitions — minimal</title>
+  <style>
+    :root{--bg:#071024;--card:#0b1220;--accent:#60a5fa;--muted:#94a3b8}
+    *{box-sizing:border-box}
+    body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; min-height:100vh; background:linear-gradient(180deg,#071024 0%, #0b1220 100%); color:#e6eef8; display:flex; align-items:center; justify-content:center; padding:20px}
+    .card{width:100%; max-width:720px; background:var(--card); border-radius:12px; padding:22px; box-shadow:0 6px 24px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03)}
+    h1{margin:0 0 8px 0; font-size:18px}
+    .word{font-weight:700; font-size:36px; margin:12px 0}
+    .definition{background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; min-height:72px; display:none; white-space:pre-wrap}
+    .definition.visible{display:block}
+    .controls{display:flex; gap:10px; margin-top:12px}
+    button{background:transparent; border:1px solid rgba(255,255,255,0.06); padding:10px 14px; color:inherit; border-radius:10px; cursor:pointer}
+    button.primary{background:linear-gradient(90deg,var(--accent),#3b82f6); border:0; color:#04263a}
+    textarea{width:100%; min-height:120px; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; margin-top:12px; resize:vertical}
+    a.linked-word:hover{opacity:0.8;}
+  </style>
 </head>
 <body>
-<main class="card">
-<h1>Définitions — minimal</h1>
-<div id="word" class="word">Mot</div>
-<div id="definition" class="definition" aria-hidden="true"></div>
+  <main class="card">
+    <h1>Définitions — minimal</h1>
+    <div id="word" class="word">Mot</div>
+    <div id="definition" class="definition" aria-hidden="true"></div>
 
+    <div class="controls">
+      <button id="revealBtn" class="primary">Afficher la définition</button>
+      <button id="nextBtn">Définition suivante</button>
+    </div>
 
-<div class="controls">
-<button id="revealBtn" class="primary">Afficher la définition</button>
-<button id="nextBtn">Définition suivante</button>
-</div>
+    <textarea id="edit" placeholder="Écris ta définition ici..."></textarea>
+  </main>
 
+  <script>
+    const initialDefinitions = [
+      {"word":"Procaryotes","definition":"Organismes unicellulaires sans noyau, pas d'organites."},
+      {"word":"Bactéries","definition":"Organismes unicellulaires sans noyau, très répandus dans tous les milieux."},
+      {"word":"Archées","definition":"Organismes unicellulaires sans noyau, extrêmophiles."},
+      {"word":"Extrêmophiles","definition":"Organismes qui vivent et se développent dans des conditions extrêmes, souvent mortelles pour la plupart des autres êtres vivants."},
+      {"word":"Eucaryotes","definition":"Organismes dont les cellules possèdent un noyau véritable entouré d’une membrane, ainsi que des organites."},
+      {"word":"Cellule","definition":"Unité de vie."},
+      {"word":"Hétérotrophe","definition":"Organisme qui ne peut fabriquer sa nourriture à partir de rien, a besoin de matière organique provenant de l'extérieur."}
+    ];
 
-<textarea id="edit" placeholder="Écris ta définition ici..."></textarea>
-</main>
+    let definitions = initialDefinitions.slice();
+    let currentIndex = 0;
 
+    const el = {
+      word: document.getElementById('word'),
+      def: document.getElementById('definition'),
+      revealBtn: document.getElementById('revealBtn'),
+      nextBtn: document.getElementById('nextBtn'),
+      edit: document.getElementById('edit')
+    };
 
-<script>
-let definitions = [];
-let currentIndex = 0;
+    // dictionnaire rapide pour lookup
+    const wordMap = {};
+    initialDefinitions.forEach(item => {
+      const key = item.word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      wordMap[key] = item;
+    });
 
+    function pickRandom(exclude){ 
+      if(definitions.length<=1) return 0; 
+      let i; 
+      do { i = Math.floor(Math.random()*definitions.length); } while(i===exclude); 
+      return i; 
+    }
 
-const el = {
-word: document.getElementById('word'),
-def: document.getElementById('definition'),
-revealBtn: document.getElementById('revealBtn'),
-nextBtn: document.getElementById('nextBtn'),
+    // rendre les mots cliquables, même avec ponctuation autour
+    function linkifyDefinition(text){
+      return text.split(/\s+/).map(token => {
+        // capturer ponctuation au début et à la fin
+        const match = token.match(/^(\W*)([\wÀ-ÖØ-öø-ÿ'-]+)(\W*)$/u);
+        if(match){
+          const prefix = match[1], word = match[2], suffix = match[3];
+          const key = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          if(wordMap[key]){
+            return `${prefix}<a href="#" class="linked-word" data-key="${key}" style="color:#60a5fa; text-decoration:underline; cursor:pointer;">${word}</a>${suffix}`;
+          }
+        }
+        return token;
+      }).join(' ');
+    }
+
+    function render(){
+      const item = definitions[currentIndex];
+      el.word.textContent = item.word || '(mot)';
+      el.def.innerHTML = linkifyDefinition(item.definition || '(pas de définition)');
+      el.def.classList.remove('visible');
+      el.def.setAttribute('aria-hidden','true');
+      el.revealBtn.textContent = 'Afficher la définition';
+      el.edit.value = '';
+
+      el.def.querySelectorAll('.linked-word').forEach(a => {
+        a.addEventListener('click', e => {
+          e.preventDefault();
+          const key = a.dataset.key;
+          const target = wordMap[key];
+          if(target){
+            currentIndex = definitions.indexOf(target);
+            render();
+          }
+        });
+      });
+    }
+
+    function toggleReveal(){ 
+      const visible = el.def.classList.toggle('visible'); 
+      el.def.setAttribute('aria-hidden', String(!visible)); 
+      el.revealBtn.textContent = visible ? 'Masquer la définition' : 'Afficher la définition'; 
+    }
+
+    function next(){ 
+      currentIndex = pickRandom(currentIndex); 
+      render(); 
+    }
+
+    el.revealBtn.addEventListener('click', toggleReveal);
+    el.nextBtn.addEventListener('click', next);
+
+    document.addEventListener('keydown', (e)=>{
+      const active = document.activeElement;
+      const typing = active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA');
+      if(e.code === 'Space' && !typing){ e.preventDefault(); toggleReveal(); }
+      if((e.key==='n' || e.key==='N') && !typing){ next(); }
+    });
+
+    (function init(){ currentIndex = Math.floor(Math.random()*definitions.length); render(); })();
+  </script>
+</body>
 </html>

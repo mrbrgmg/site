@@ -27,6 +27,7 @@
     <div id="definition" class="definition" aria-hidden="true"></div>
 
     <div class="controls">
+      <button id="prevBtn">Définition précédente</button>
       <button id="revealBtn" class="primary">Afficher la définition</button>
       <button id="nextBtn">Définition suivante</button>
     </div>
@@ -47,16 +48,15 @@
 
     let definitions = initialDefinitions.slice();
     let currentIndex = 0;
-
     const el = {
       word: document.getElementById('word'),
       def: document.getElementById('definition'),
       revealBtn: document.getElementById('revealBtn'),
+      prevBtn: document.getElementById('prevBtn'),
       nextBtn: document.getElementById('nextBtn'),
       edit: document.getElementById('edit')
     };
 
-    // dictionnaire rapide pour lookup
     const wordMap = {};
     initialDefinitions.forEach(item => {
       const key = item.word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -70,10 +70,8 @@
       return i; 
     }
 
-    // rendre les mots cliquables, même avec ponctuation autour
     function linkifyDefinition(text){
       return text.split(/\s+/).map(token => {
-        // capturer ponctuation au début et à la fin
         const match = token.match(/^(\W*)([\wÀ-ÖØ-öø-ÿ'-]+)(\W*)$/u);
         if(match){
           const prefix = match[1], word = match[2], suffix = match[3];
@@ -86,14 +84,20 @@
       }).join(' ');
     }
 
-    function render(){
-      const item = definitions[currentIndex];
-      el.word.textContent = item.word || '(mot)';
-      el.def.innerHTML = linkifyDefinition(item.definition || '(pas de définition)');
+    // HISTORIQUE
+    let history = []; // tableau {index, text}
+    let historyPointer = -1; // position actuelle dans l'historique
+
+    function renderFromHistory(){
+      const state = history[historyPointer];
+      if(!state) return;
+      currentIndex = state.index;
+      el.word.textContent = definitions[currentIndex].word;
+      el.def.innerHTML = linkifyDefinition(definitions[currentIndex].definition || '(pas de définition)');
       el.def.classList.remove('visible');
       el.def.setAttribute('aria-hidden','true');
       el.revealBtn.textContent = 'Afficher la définition';
-      el.edit.value = '';
+      el.edit.value = state.text || '';
 
       el.def.querySelectorAll('.linked-word').forEach(a => {
         a.addEventListener('click', e => {
@@ -101,11 +105,26 @@
           const key = a.dataset.key;
           const target = wordMap[key];
           if(target){
+            saveCurrentState();
             currentIndex = definitions.indexOf(target);
-            render();
+            addToHistory(currentIndex, '');
+            renderFromHistory();
           }
         });
       });
+    }
+
+    function saveCurrentState(){
+      if(historyPointer>=0){
+        history[historyPointer].text = el.edit.value;
+      }
+    }
+
+    function addToHistory(index, text=''){
+      // supprimer l'historique "futur" si on clique sur précédent et change
+      history = history.slice(0, historyPointer+1);
+      history.push({index, text});
+      historyPointer = history.length - 1;
     }
 
     function toggleReveal(){ 
@@ -114,12 +133,29 @@
       el.revealBtn.textContent = visible ? 'Masquer la définition' : 'Afficher la définition'; 
     }
 
-    function next(){ 
-      currentIndex = pickRandom(currentIndex); 
-      render(); 
+    function prev(){
+      if(historyPointer>0){
+        saveCurrentState();
+        historyPointer--;
+        renderFromHistory();
+      }
+    }
+
+    function next(){
+      if(historyPointer<history.length-1){
+        // revenir dans l'historique
+        historyPointer++;
+        renderFromHistory();
+      } else {
+        saveCurrentState();
+        const newIndex = pickRandom(currentIndex);
+        addToHistory(newIndex);
+        renderFromHistory();
+      }
     }
 
     el.revealBtn.addEventListener('click', toggleReveal);
+    el.prevBtn.addEventListener('click', prev);
     el.nextBtn.addEventListener('click', next);
 
     document.addEventListener('keydown', (e)=>{
@@ -127,9 +163,14 @@
       const typing = active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA');
       if(e.code === 'Space' && !typing){ e.preventDefault(); toggleReveal(); }
       if((e.key==='n' || e.key==='N') && !typing){ next(); }
+      if((e.key==='p' || e.key==='P') && !typing){ prev(); }
     });
 
-    (function init(){ currentIndex = Math.floor(Math.random()*definitions.length); render(); })();
+    (function init(){ 
+      const startIndex = Math.floor(Math.random()*definitions.length);
+      addToHistory(startIndex, '');
+      renderFromHistory();
+    })();
   </script>
 </body>
 </html>

@@ -36,19 +36,11 @@
   </main>
 
   <script>
-    const initialDefinitions = [
-      {"word": "Protéines", "definition": "Molécules qui font le travail dans la cellule (structure, enzymes, transport…)."},
-      {"word":"Procaryotes","definition":"Organismes unicellulaires sans noyau, pas d'organites."},
-      {"word":"Bactéries","definition":"Organismes unicellulaires sans noyau, très répandus dans tous les milieux."},
-      {"word":"Archées","definition":"Organismes unicellulaires sans noyau, extrêmophiles."},
-      {"word":"Extrêmophiles","definition":"Organismes qui vivent et se développent dans des conditions extrêmes, souvent mortelles pour la plupart des autres êtres vivants."},
-      {"word":"Eucaryotes","definition":"Organismes dont les cellules possèdent un noyau véritable entouré d’une membrane, ainsi que des organites."},
-      {"word":"Cellule","definition":"Unité de vie."},
-      {"word":"Hétérotrophe","definition":"Organisme qui ne peut fabriquer sa nourriture à partir de rien, a besoin de matière organique provenant de l'extérieur."}
-    ];
-
-    let definitions = initialDefinitions.slice();
+    let definitions = [];
     let currentIndex = 0;
+    let history = [];
+    let historyPointer = -1;
+
     const el = {
       word: document.getElementById('word'),
       def: document.getElementById('definition'),
@@ -58,11 +50,20 @@
       edit: document.getElementById('edit')
     };
 
-    const wordMap = {};
-    initialDefinitions.forEach(item => {
-      const key = item.word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-      wordMap[key] = item;
-    });
+    let wordMap = {};
+
+    // Charger les définitions depuis le fichier JSON
+    fetch("definitions.json")
+      .then(response => response.json())
+      .then(data => {
+        definitions = data;
+        wordMap = {};
+        definitions.forEach(item => {
+          const key = item.word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          wordMap[key] = item;
+        });
+        init(); // démarrer seulement après chargement
+      });
 
     function pickRandom(exclude){ 
       if(definitions.length<=1) return 0; 
@@ -84,10 +85,6 @@
         return token;
       }).join(' ');
     }
-
-    // HISTORIQUE
-    let history = []; // tableau {index, text}
-    let historyPointer = -1; // position actuelle dans l'historique
 
     function renderFromHistory(){
       const state = history[historyPointer];
@@ -122,7 +119,6 @@
     }
 
     function addToHistory(index, text=''){
-      // supprimer l'historique "futur" si on clique sur précédent et change
       history = history.slice(0, historyPointer+1);
       history.push({index, text});
       historyPointer = history.length - 1;
@@ -144,7 +140,6 @@
 
     function next(){
       if(historyPointer<history.length-1){
-        // revenir dans l'historique
         historyPointer++;
         renderFromHistory();
       } else {
@@ -153,6 +148,12 @@
         addToHistory(newIndex);
         renderFromHistory();
       }
+    }
+
+    function init(){ 
+      const startIndex = Math.floor(Math.random()*definitions.length);
+      addToHistory(startIndex, '');
+      renderFromHistory();
     }
 
     el.revealBtn.addEventListener('click', toggleReveal);
@@ -166,13 +167,6 @@
       if((e.key==='n' || e.key==='N') && !typing){ next(); }
       if((e.key==='p' || e.key==='P') && !typing){ prev(); }
     });
-
-    (function init(){ 
-      const startIndex = Math.floor(Math.random()*definitions.length);
-      addToHistory(startIndex, '');
-      renderFromHistory();
-    })();
   </script>
 </body>
 </html>
-

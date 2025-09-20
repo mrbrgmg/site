@@ -1,172 +1,615 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Définitions — minimal</title>
-  <style>
-    :root{--bg:#071024;--card:#0b1220;--accent:#60a5fa;--muted:#94a3b8}
-    *{box-sizing:border-box}
-    body{font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; min-height:100vh; background:linear-gradient(180deg,#071024 0%, #0b1220 100%); color:#e6eef8; display:flex; align-items:center; justify-content:center; padding:20px}
-    .card{width:100%; max-width:720px; background:var(--card); border-radius:12px; padding:22px; box-shadow:0 6px 24px rgba(2,6,23,0.6); border:1px solid rgba(255,255,255,0.03)}
-    h1{margin:0 0 8px 0; font-size:18px}
-    .word{font-weight:700; font-size:36px; margin:12px 0}
-    .definition{background:rgba(255,255,255,0.03); padding:14px; border-radius:10px; min-height:72px; display:none; white-space:pre-wrap}
-    .definition.visible{display:block}
-    .controls{display:flex; gap:10px; margin-top:12px}
-    button{background:transparent; border:1px solid rgba(255,255,255,0.06); padding:10px 14px; color:inherit; border-radius:10px; cursor:pointer}
-    button.primary{background:linear-gradient(90deg,var(--accent),#3b82f6); border:0; color:#04263a}
-    textarea{width:100%; min-height:120px; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04); background:transparent; color:inherit; margin-top:12px; resize:vertical}
-    a.linked-word:hover{opacity:0.8;}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accueil - Sélection des matières</title>
+    <style>
+        :root{
+            --bg-1: #0f1724; /* deep navy */
+            --bg-2: #10243a; /* slightly lighter */
+            --card-bg: rgba(255,255,255,0.04);
+            --glass: rgba(255,255,255,0.06);
+            --muted: rgba(255,255,255,0.75);
+            --text-strong: #e6eef8;
+            --accent-a: #6ee7b7; /* mint */
+            --accent-b: #60a5fa; /* sky */
+            --accent-c: #f472b6; /* pink */
+            --accent-d: #fbbf24; /* amber */
+            --glass-border: rgba(255,255,255,0.06);
+        }
+
+        /* Reset */
+        *{box-sizing:border-box;margin:0;padding:0}
+        html,body{height:100%}
+
+        body{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+            background: radial-gradient(1200px 600px at 10% 10%, rgba(96,165,250,0.12), transparent 8%),
+                        radial-gradient(1000px 500px at 90% 80%, rgba(110,231,183,0.08), transparent 10%),
+                        linear-gradient(180deg,var(--bg-1), var(--bg-2));
+            color:var(--text-strong);
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:28px;
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+        }
+
+        /* Soft decorative glow behind content */
+        body::before{
+            content:'';
+            position:fixed;
+            inset: -20% -20% auto auto;
+            width:55vw;height:55vh;
+            pointer-events:none;
+            background: radial-gradient(circle at 20% 20%, rgba(99,102,241,0.12), transparent 12%),
+                        radial-gradient(circle at 80% 80%, rgba(99,102,241,0.08), transparent 10%);
+            filter: blur(60px);
+            z-index:0;
+        }
+
+        .container{
+            position:relative;
+            z-index:1;
+            width:100%;
+            max-width:820px;
+            padding:42px;
+            border-radius:20px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+            border:1px solid var(--glass-border);
+            box-shadow: 0 8px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+            backdrop-filter: blur(12px) saturate(120%);
+            text-align:center;
+            animation: popIn .6s cubic-bezier(.2,.9,.3,1);
+        }
+
+        @keyframes popIn{
+            from{opacity:0;transform:translateY(18px) scale(.995)}
+            to{opacity:1;transform:none}
+        }
+
+        h1{
+            color:var(--text-strong);
+            font-size:2.4rem;
+            font-weight:600;
+            letter-spacing:-0.5px;
+            margin-bottom:8px;
+        }
+
+        .subtitle{
+            color:var(--muted);
+            margin-bottom:28px;
+            font-size:1.05rem;
+            font-weight:500;
+        }
+
+        .subjects-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+            gap:18px;
+            margin-top:12px;
+        }
+
+        .subject-button{
+            position:relative;
+            overflow:hidden;
+            border:0;
+            padding:18px 22px;
+            border-radius:14px;
+            font-size:1.06rem;
+            font-weight:700;
+            text-transform:none;
+            letter-spacing:0.6px;
+            cursor:pointer;
+            transition:transform .28s cubic-bezier(.2,.9,.3,1), box-shadow .28s ease, filter .28s ease;
+            display:flex;
+            align-items:center;
+            gap:12px;
+            justify-content:center;
+            color: #06202a;
+            background: linear-gradient(135deg, rgba(255,255,255,0.85), rgba(255,255,255,0.82));
+            box-shadow: 0 6px 18px rgba(2,6,23,0.35);
+            transform-style:preserve-3d;
+            backface-visibility:hidden;
+        }
+
+        .subject-button > span{font-size:1.3rem}
+
+        /* Color accents kept but refined for modern look */
+        .subject-button:nth-child(1){ /* 1 */
+            background: linear-gradient(135deg, rgba(96,165,250,0.9), rgba(96,165,250,0.75));
+            color: white;
+            box-shadow: 0 10px 30px rgba(59,130,246,0.18);
+        }
+        .subject-button:nth-child(2){ /* 2 */
+            background: linear-gradient(135deg, rgba(110,231,183,0.95), rgba(56,211,164,0.8));
+            color: #02221a;
+            box-shadow: 0 10px 30px rgba(34,197,94,0.12);
+        }
+        .subject-button:nth-child(3){ /* 3 */
+            background: linear-gradient(135deg, rgba(244,114,182,0.95), rgba(251,191,36,0.9));
+            color:#1a0b1a;
+            box-shadow: 0 10px 30px rgba(236,72,153,0.12);
+        }
+
+        .subject-button::after{
+            content:'';
+            position:absolute;
+            inset:0;
+            background:linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0));
+            mix-blend-mode:overlay;
+            pointer-events:none;
+        }
+
+        .subject-button:hover{transform:translateY(-8px) scale(1.02);filter:brightness(1.02)}
+        .subject-button:active{transform:translateY(-3px) scale(.995)}
+
+        /* Small glowing icon effect */
+        .subject-button span.emoji{display:inline-block;transform:translateY(-1px);filter:drop-shadow(0 6px 8px rgba(0,0,0,0.18))}
+
+        /* Definition UI tweaks (only visuals) */
+        .definition-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.03)}
+
+        .back-button{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:10px 18px;border-radius:10px;cursor:pointer;transition:all .22s}
+        .back-button:hover{transform:translateY(-3px);box-shadow:0 8px 18px rgba(2,6,23,0.5);border-color:rgba(255,255,255,0.09)}
+
+        .definition-header h2{margin:0;font-size:1.4rem;color:var(--text-strong)}
+
+        .definition-card{animation:popIn .45s ease-out}
+        .definition-card h3{color:var(--muted);font-weight:600;margin-bottom:12px}
+
+        .term{
+            background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+            padding:22px;border-radius:14px;font-size:1.6rem;font-weight:700;color:var(--accent-b);
+            margin:16px 0;border:1px solid rgba(255,255,255,0.03);box-shadow: 0 8px 30px rgba(99,102,241,0.06) inset;
+        }
+
+        .correction-section{margin:24px 0}
+
+        .show-correction-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text-strong);padding:12px 20px;border-radius:10px;cursor:pointer;font-weight:700;transition:all .22s}
+        .show-correction-btn:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(0,0,0,0.45)}
+
+        .correction{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:10px;border-left:4px solid rgba(96,165,250,0.6);color:var(--muted);}
+
+        label{color:var(--muted);font-weight:700}
+
+        #user-answer{width:100%;min-height:130px;padding:14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:rgba(2,6,23,0.25);color:var(--text-strong);font-size:1rem;font-family:inherit;resize:vertical;transition:box-shadow .2s, border-color .2s}
+        #user-answer:focus{outline:none;border-color:rgba(96,165,250,0.6);box-shadow:0 8px 30px rgba(96,165,250,0.06)}
+
+        .navigation-buttons{display:flex;gap:14px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+
+        .prev-definition-btn,.next-definition-btn{padding:12px 22px;border-radius:10px;border:0;font-weight:700;cursor:pointer;min-width:170px}
+        .prev-definition-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+        .next-definition-btn{background:linear-gradient(90deg,var(--accent-b), #4f46e5);color:white}
+
+        .prev-definition-btn:disabled,.next-definition-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+
+        .progress-indicator{background:linear-gradient(90deg,var(--accent-a),var(--accent-b));color:#06202a;padding:8px 14px;border-radius:999px;font-weight:800}
+
+        .definitions-list-container{animation:popIn .45s}
+        .definitions-list{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+
+        .definition-item{display:flex;align-items:center;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03);padding:14px 16px;border-radius:12px;cursor:pointer;transition:transform .2s,box-shadow .2s}
+        .definition-item:hover{transform:translateY(-6px);box-shadow:0 14px 30px rgba(2,6,23,0.6)}
+        .definition-item.visited{background:linear-gradient(90deg, rgba(110,231,183,0.06), rgba(96,165,250,0.03));border-color:rgba(110,231,183,0.12)}
+
+        .definition-number{background:rgba(255,255,255,0.06);color:var(--text-strong);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;margin-right:14px}
+        .definition-item.visited .definition-number{background:linear-gradient(90deg,var(--accent-a),var(--accent-b));color:#04221b}
+
+        .definition-term{flex:1;font-weight:800;color:var(--text-strong);font-size:1.06rem}
+        .definition-status{font-size:0.9rem;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,0.02);color:var(--muted);font-weight:700}
+        .definition-item.visited .definition-status{background:rgba(110,231,183,0.12);color:var(--muted)}
+
+        .subject-stats{background:linear-gradient(90deg,var(--accent-b),var(--accent-a));color:#04221b;padding:8px 14px;border-radius:999px;font-weight:800}
+
+        .quick-actions{display:flex;gap:12px;justify-content:center;margin-top:22px;flex-wrap:wrap}
+        .action-btn{padding:12px 20px;border-radius:10px;border:0;font-weight:800;cursor:pointer;min-width:160px}
+        .start-btn{background:linear-gradient(90deg,var(--accent-a),var(--accent-b));color:#04221b}
+        .random-btn{background:linear-gradient(90deg,var(--accent-d),#f97316);color:#2b1b00}
+
+        .completion-card{padding:22px;border-radius:12px}
+        .completion-icon{font-size:3.6rem;margin-bottom:12px}
+        .completion-card h3{color:var(--accent-a);font-size:1.6rem;margin-bottom:8px}
+        .completion-card p{color:var(--muted);line-height:1.5}
+
+        .completion-actions{display:flex;flex-direction:column;gap:12px;align-items:center}
+        .restart-btn{background:linear-gradient(90deg,var(--accent-b),#4f46e5);color:white}
+        .list-btn{background:linear-gradient(90deg,#7c3aed,#6d28d9);color:white}
+        .home-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+
+        @media(max-width:768px){
+            .container{padding:28px}
+            h1{font-size:1.8rem}
+            .term{font-size:1.3rem}
+            .subjects-grid{grid-template-columns:1fr}
+        }
+
+        .footer{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.03);color:var(--muted);padding:8px 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.02);backdrop-filter:blur(6px)}
+
+    </style>
 </head>
 <body>
-  <main class="card">
-    <h1>Définitions — minimal</h1>
-    <div id="word" class="word">Mot</div>
-    <div id="definition" class="definition" aria-hidden="true"></div>
-
-    <div class="controls">
-      <button id="prevBtn">Définition précédente</button>
-      <button id="revealBtn" class="primary">Afficher la définition</button>
-      <button id="nextBtn">Définition suivante</button>
+    <div class="container">
+        <h1>Bienvenue</h1>
+        <p class="subtitle">Choisissez une matière pour commencer</p>
+        
+        <div class="subjects-grid">
+            <button class="subject-button" onclick="selectSubject('biologie')">
+                <span class="emoji">🧬</span> Biologie
+            </button>
+            <button class="subject-button" onclick="selectSubject('mathematiques')">
+                <span class="emoji">📊</span> Mathématiques
+            </button>
+            <button class="subject-button" onclick="selectSubject('svt')">
+                <span class="emoji">🌱</span> SVT
+            </button>
+        </div>
     </div>
 
-    <textarea id="edit" placeholder="Écris ta définition ici..."></textarea>
-  </main>
+    <div class="footer">
+        Sélectionnez une matière pour accéder au contenu
+    </div>
 
-  <script>
-    let definitions = [];
-    let currentIndex = 0;
-    let history = [];
-    let historyPointer = -1;
+    <script>
+        // Base de données des définitions par matière
+        const definitions = {
+            biologie: [
+    {"term": "Molécule polaire", "definition": "Les charges électriques sont inégalement réparties, elle a un pôle positif et un pôle négatif."},
+    {"term": "Molécule apolaire", "definition": "Les charges électriques sont uniformes, pas de pôles."},
+    {"term": "Ions", "definition": "Atome ou molécule qui a une charge électrique, Cation(+) ou Anion(-)."},
+    {"term": "Chloroplastes", "definition": "Organites des cellules végétales, permettent la photosynthèse."},
+    {"term": "Lipides", "definition": "Molécules composées d'acides gras présentes dans notre alimentation, source d'énergie. Principalement composées de C, H, O (ternaires)."},
+    {"term": "Enzymes", "definition": "Protéines qui accélèrent les réactions chimiques dans le corps (digestion, etc.)."},
+    {"term": "Hémoglobines", "definition": "Protéines des globules rouges, transportent l’oxygène des poumons vers les tissus et le dioxyde de carbone des tissus vers les poumons."},
+    {"term": "Anucléées", "definition": "Cellules sans noyau."},
+    {"term": "Mitose", "definition": "Division cellulaire."},
+    {"term": "Organite", "definition": "Structure dans une cellule qui a une fonction précise."},
+    {"term": "Biochimie", "definition": "Chimie du vivant."},
+    {"term": "Composés ternaires", "definition": "Molécules constituées de carbone (C), d’hydrogène (H) et d’oxygène (O)."},
+    {"term": "Protéines", "definition": "Molécules qui font le travail dans la cellule (structure, enzymes, transport…)."},
+    {"term": "Procaryotes", "definition": "Organismes unicellulaires sans noyau, pas d'organites."},
+    {"term": "Bactéries", "definition": "Organismes unicellulaires sans noyau, très répandus dans tous les milieux."},
+    {"term": "Archées", "definition": "Organismes unicellulaires sans noyau, souvent extrêmophiles."},
+    {"term": "Extrêmophiles", "definition": "Organismes qui vivent et se développent dans des conditions extrêmes, souvent mortelles pour la plupart des autres êtres vivants."},
+    {"term": "Eucaryotes", "definition": "Organismes dont les cellules possèdent un noyau véritable entouré d’une membrane, ainsi que des organites."},
+    {"term": "Cellule", "definition": "Unité de vie."},
+    {"term": "Hétérotrophe", "definition": "Organisme qui ne peut fabriquer sa nourriture à partir de rien, a besoin de matière organique provenant de l'extérieur."}
+],
 
-    const el = {
-      word: document.getElementById('word'),
-      def: document.getElementById('definition'),
-      revealBtn: document.getElementById('revealBtn'),
-      prevBtn: document.getElementById('prevBtn'),
-      nextBtn: document.getElementById('nextBtn'),
-      edit: document.getElementById('edit')
-    };
+            mathematiques: [
+                {
+                    term: "Fonction dérivée",
+                    definition: "Fonction qui donne la pente de la tangente à la courbe représentative d'une fonction en chaque point où elle existe."
+                },
+                {
+                    term: "Limite",
+                    definition: "Valeur vers laquelle tend une fonction lorsque la variable indépendante s'approche d'une valeur donnée."
+                },
+                {
+                    term: "Intégrale",
+                    definition: "Opération mathématique qui calcule l'aire sous la courbe d'une fonction sur un intervalle donné."
+                },
+                {
+                    term: "Matrice",
+                    definition: "Tableau rectangulaire de nombres, de symboles ou d'expressions, arrangés en lignes et en colonnes."
+                },
+                {
+                    term: "Probabilité",
+                    definition: "Mesure quantitative de la vraisemblance qu'un événement se produise, exprimée par un nombre entre 0 et 1."
+                }
+            ],
+            svt: [
+                {
+                    term: "Tectonique des plaques",
+                    definition: "Théorie expliquant la dynamique globale de la lithosphère terrestre, divisée en plaques qui se déplacent sur l'asthénosphère."
+                },
+                {
+                    term: "Écosystème",
+                    definition: "Ensemble formé par une communauté d'êtres vivants et leur environnement physique, fonctionnant comme une unité écologique."
+                },
+                {
+                    term: "Sélection naturelle",
+                    definition: "Mécanisme évolutif par lequel les individus les mieux adaptés à leur environnement ont plus de chances de survivre et de se reproduire."
+                },
+                {
+                    term: "Géologie",
+                    definition: "Science qui étudie la composition, la structure, l'histoire et l'évolution de la Terre et des processus qui la façonnent."
+                },
+                {
+                    term: "Biodiversité",
+                    definition: "Variété de la vie sur Terre, incluant la diversité des espèces, des gènes et des écosystèmes."
+                }
+            ]
+        };
 
-    let wordMap = {};
+        let currentDefinition = null;
+        let isCorrectionalVisible = false;
+        let currentSubject = null;
+        let currentIndex = 0;
+        let userAnswers = {};
+        let visitedDefinitions = {};
+        let navigationHistory = []; // Historique de navigation
 
-    // Charger les définitions depuis le fichier JSON
-    fetch("definitions.json")
-      .then(response => response.json())
-      .then(data => {
-        definitions = data;
-        wordMap = {};
-        definitions.forEach(item => {
-          const key = item.word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-          wordMap[key] = item;
-        });
-        init(); // démarrer seulement après chargement
-      });
+        function selectSubject(subject) {
+            event.target.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                event.target.style.transform = '';
+            }, 150);
 
-    function pickRandom(exclude){ 
-      if(definitions.length<=1) return 0; 
-      let i; 
-      do { i = Math.floor(Math.random()*definitions.length); } while(i===exclude); 
-      return i; 
-    }
+            currentSubject = subject;
+            if (!userAnswers[subject]) {
+                userAnswers[subject] = {};
+            }
+            if (!visitedDefinitions[subject]) {
+                visitedDefinitions[subject] = {};
+            }
+            
+            // Réinitialiser l'historique de navigation pour cette matière
+            navigationHistory = [];
 
-    function linkifyDefinition(text){
-      return text.split(/\s+/).map(token => {
-        const match = token.match(/^(\W*)([\wÀ-ÖØ-öø-ÿ'-]+)(\W*)$/u);
-        if(match){
-          const prefix = match[1], word = match[2], suffix = match[3];
-          const key = word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-          if(wordMap[key]){
-            return `${prefix}<a href="#" class="linked-word" data-key="${key}" style="color:#60a5fa; text-decoration:underline; cursor:pointer;">${word}</a>${suffix}`;
-          }
+            showDefinitionsList(subject);
         }
-        return token;
-      }).join(' ');
-    }
 
-    function renderFromHistory(){
-      const state = history[historyPointer];
-      if(!state) return;
-      currentIndex = state.index;
-      el.word.textContent = definitions[currentIndex].word;
-      el.def.innerHTML = linkifyDefinition(definitions[currentIndex].definition || '(pas de définition)');
-      el.def.classList.remove('visible');
-      el.def.setAttribute('aria-hidden','true');
-      el.revealBtn.textContent = 'Afficher la définition';
-      el.edit.value = state.text || '';
+        function showDefinitionsList(subject) {
+            const container = document.querySelector('.container');
+            const subjectDefinitions = definitions[subject];
+            
+            let definitionsListHTML = '';
+            subjectDefinitions.forEach((def, index) => {
+                const isVisited = visitedDefinitions[subject][index];
+                const statusClass = isVisited ? 'visited' : 'unvisited';
+                definitionsListHTML += `
+                    <div class="definition-item ${statusClass}" onclick="goToDefinition(${index})">
+                        <div class="definition-number">${index + 1}</div>
+                        <div class="definition-term">${def.term}</div>
+                        <div class="definition-status">${isVisited ? '✓ Vue' : '○ Non vue'}</div>
+                    </div>
+                `;
+            });
 
-      el.def.querySelectorAll('.linked-word').forEach(a => {
-        a.addEventListener('click', e => {
-          e.preventDefault();
-          const key = a.dataset.key;
-          const target = wordMap[key];
-          if(target){
-            saveCurrentState();
-            currentIndex = definitions.indexOf(target);
-            addToHistory(currentIndex, '');
-            renderFromHistory();
-          }
+            container.innerHTML = `
+                <div class="definition-header">
+                    <button class="back-button" onclick="goBack()">← Retour à l'accueil</button>
+                    <h2>${subject.charAt(0).toUpperCase() + subject.slice(1)}</h2>
+                    <div class="subject-stats">
+                        ${Object.keys(visitedDefinitions[subject] || {}).length} / ${subjectDefinitions.length} vues
+                    </div>
+                </div>
+                
+                <div class="definitions-list-container">
+                    <h3>Sélectionnez une définition à réviser :</h3>
+                    <div class="definitions-list">
+                        ${definitionsListHTML}
+                    </div>
+                    
+                    <div class="quick-actions">
+                        <button class="action-btn start-btn" onclick="startFromFirst()">
+                            🎯 Commencer depuis le début
+                        </button>
+                        <button class="action-btn random-btn" onclick="goToRandomDefinition()">
+                            🎲 Définition aléatoire
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function goToDefinition(index) {
+            // Ajouter la définition actuelle à l'historique avant de changer
+            if (currentIndex !== null && currentIndex !== index) {
+                navigationHistory.push(currentIndex);
+            }
+            
+            currentIndex = index;
+            visitedDefinitions[currentSubject][index] = true;
+            showDefinitionAtIndex(currentIndex);
+        }
+
+        function startFromFirst() {
+            // Réinitialiser l'historique et aller à la première définition
+            navigationHistory = [];
+            goToDefinition(0);
+        }
+
+        function goToRandomDefinition() {
+            const subjectDefinitions = definitions[currentSubject];
+            const randomIndex = Math.floor(Math.random() * subjectDefinitions.length);
+            goToDefinition(randomIndex);
+        }
+
+        function showDefinitionAtIndex(index) {
+            const subjectDefinitions = definitions[currentSubject];
+            currentIndex = index;
+            currentDefinition = subjectDefinitions[currentIndex];
+            isCorrectionalVisible = false;
+
+            showDefinitionInterface();
+        }
+
+        function showDefinitionInterface() {
+            const container = document.querySelector('.container');
+            const subjectDefinitions = definitions[currentSubject];
+            const currentAnswer = userAnswers[currentSubject][currentIndex] || '';
+            
+            visitedDefinitions[currentSubject][currentIndex] = true;
+            
+            container.innerHTML = `
+                <div class="definition-header">
+                    <button class="back-button" onclick="backToDefinitionsList()">← Liste des définitions</button>
+                    <h2>${currentSubject.charAt(0).toUpperCase() + currentSubject.slice(1)}</h2>
+                    <div class="progress-indicator">
+                        ${currentIndex + 1} / ${subjectDefinitions.length}
+                    </div>
+                </div>
+                
+                <div class="definition-card">
+                    <h3>Définissez ce terme :</h3>
+                    <div class="term">${currentDefinition.term}</div>
+                    
+                    <div class="answer-section">
+                        <label for="user-answer">Votre réponse :</label>
+                        <textarea 
+                            id="user-answer" 
+                            placeholder="Tapez votre définition ici..."
+                            oninput="saveCurrentAnswer()"
+                        >${currentAnswer}</textarea>
+                    </div>
+                    
+                    <div class="correction-section">
+                        <button class="show-correction-btn" onclick="toggleCorrection()">
+                            Afficher la correction
+                        </button>
+                        <div class="correction" id="correction" style="display: none;">
+                            <h4>Correction :</h4>
+                            <p>${currentDefinition.definition}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="navigation-buttons">
+                        <button class="prev-definition-btn" onclick="previousDefinition()" ${navigationHistory.length === 0 ? 'disabled' : ''}>
+                            ← Définition précédente
+                        </button>
+                        <button class="next-definition-btn" onclick="nextDefinition()">
+                            Définition aléatoire →
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function saveCurrentAnswer() {
+            const textarea = document.getElementById('user-answer');
+            if (textarea && currentSubject && currentIndex !== null) {
+                userAnswers[currentSubject][currentIndex] = textarea.value;
+            }
+        }
+
+        function backToDefinitionsList() {
+            saveCurrentAnswer();
+            showDefinitionsList(currentSubject);
+        }
+
+        function nextDefinition() {
+            saveCurrentAnswer();
+            
+            // Ajouter la définition actuelle à l'historique avant de changer
+            if (currentIndex !== null) {
+                navigationHistory.push(currentIndex);
+            }
+            
+            const subjectDefinitions = definitions[currentSubject];
+            const unvisitedIndices = [];
+            
+            for (let i = 0; i < subjectDefinitions.length; i++) {
+                if (!visitedDefinitions[currentSubject][i]) {
+                    unvisitedIndices.push(i);
+                }
+            }
+            
+            if (unvisitedIndices.length > 0) {
+                const randomIndex = Math.floor(Math.random() * unvisitedIndices.length);
+                const selectedIndex = unvisitedIndices[randomIndex];
+                showDefinitionAtIndex(selectedIndex);
+            } else {
+                showCompletionMessage();
+            }
+        }
+
+        function previousDefinition() {
+            if (navigationHistory.length > 0) {
+                saveCurrentAnswer();
+                
+                // Récupérer la dernière définition visitée depuis l'historique
+                const previousIndex = navigationHistory.pop();
+                showDefinitionAtIndex(previousIndex);
+            }
+        }
+
+        function toggleCorrection() {
+            const correction = document.getElementById('correction');
+            const button = document.querySelector('.show-correction-btn');
+            
+            if (isCorrectionalVisible) {
+                correction.style.display = 'none';
+                button.textContent = 'Afficher la correction';
+                button.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+            } else {
+                correction.style.display = 'block';
+                correction.style.animation = 'fadeInUp 0.5s ease-out';
+                button.textContent = 'Masquer la correction';
+                button.style.background = 'linear-gradient(135deg, #dc3545, #e74c3c)';
+            }
+            isCorrectionalVisible = !isCorrectionalVisible;
+        }
+
+        function backToDefinitionsList() {
+            saveCurrentAnswer();
+            showDefinitionsList(currentSubject);
+        }
+
+        function showCompletionMessage() {
+            const container = document.querySelector('.container');
+            const subjectDefinitions = definitions[currentSubject];
+            
+            container.innerHTML = `
+                <div class="definition-header">
+                    <button class="back-button" onclick="backToDefinitionsList()">← Liste des définitions</button>
+                    <h2>${currentSubject.charAt(0).toUpperCase() + currentSubject.slice(1)}</h2>
+                    <div class="progress-indicator completed">
+                        ✅ ${subjectDefinitions.length} / ${subjectDefinitions.length} Terminé !
+                    </div>
+                </div>
+                
+                <div class="completion-card">
+                    <div class="completion-icon">🎉</div>
+                    <h3>Félicitations !</h3>
+                    <p>Vous avez révisé toutes les définitions de <strong>${currentSubject}</strong> !</p>
+                    
+                    <div class="completion-actions">
+                        <button class="action-btn restart-btn" onclick="restartSubject()">
+                            🔄 Recommencer cette matière
+                        </button>
+                        <button class="action-btn list-btn" onclick="backToDefinitionsList()">
+                            📋 Voir la liste complète
+                        </button>
+                        <button class="action-btn home-btn" onclick="goBack()">
+                            🏠 Retour à l'accueil
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function restartSubject() {
+            visitedDefinitions[currentSubject] = {};
+            navigationHistory = []; // Réinitialiser l'historique
+            showDefinitionsList(currentSubject);
+        }
+
+        function getNextDefinition(subject) {
+            nextDefinition();
+        }
+
+        function goBack() {
+            location.reload();
+        }
+
+        // Animation d'entrée pour les boutons
+        document.addEventListener('DOMContentLoaded', () => {
+            const buttons = document.querySelectorAll('.subject-button');
+            buttons.forEach((button, index) => {
+                button.style.opacity = '0';
+                button.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    button.style.transition = 'all 0.5s cubic-bezier(.2,.9,.3,1)';
+                    button.style.opacity = '1';
+                    button.style.transform = 'translateY(0)';
+                }, 300 + (index * 140));
+            });
         });
-      });
-    }
-
-    function saveCurrentState(){
-      if(historyPointer>=0){
-        history[historyPointer].text = el.edit.value;
-      }
-    }
-
-    function addToHistory(index, text=''){
-      history = history.slice(0, historyPointer+1);
-      history.push({index, text});
-      historyPointer = history.length - 1;
-    }
-
-    function toggleReveal(){ 
-      const visible = el.def.classList.toggle('visible'); 
-      el.def.setAttribute('aria-hidden', String(!visible)); 
-      el.revealBtn.textContent = visible ? 'Masquer la définition' : 'Afficher la définition'; 
-    }
-
-    function prev(){
-      if(historyPointer>0){
-        saveCurrentState();
-        historyPointer--;
-        renderFromHistory();
-      }
-    }
-
-    function next(){
-      if(historyPointer<history.length-1){
-        historyPointer++;
-        renderFromHistory();
-      } else {
-        saveCurrentState();
-        const newIndex = pickRandom(currentIndex);
-        addToHistory(newIndex);
-        renderFromHistory();
-      }
-    }
-
-    function init(){ 
-      const startIndex = Math.floor(Math.random()*definitions.length);
-      addToHistory(startIndex, '');
-      renderFromHistory();
-    }
-
-    el.revealBtn.addEventListener('click', toggleReveal);
-    el.prevBtn.addEventListener('click', prev);
-    el.nextBtn.addEventListener('click', next);
-
-    document.addEventListener('keydown', (e)=>{
-      const active = document.activeElement;
-      const typing = active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA');
-      if(e.code === 'Space' && !typing){ e.preventDefault(); toggleReveal(); }
-      if((e.key==='n' || e.key==='N') && !typing){ next(); }
-      if((e.key==='p' || e.key==='P') && !typing){ prev(); }
-    });
-  </script>
+    </script>
 </body>
 </html>
